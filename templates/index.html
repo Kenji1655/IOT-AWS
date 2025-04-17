@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de Imagem</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        #processedImage { max-width: 100%; margin-top: 20px; border: 1px solid #eee; }
+        .error { color: red; margin-top: 10px; }
+        .loading { display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload de Imagem e Filtro Canny</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="imageInput">Selecione uma imagem:</label>
+            <input type="file" id="imageInput" name="image" accept="image/*" required>
+            <button type="submit">Enviar e Processar</button>
+        </form>
+
+        <div id="loading" class="loading">Processando...</div>
+        <div id="error" class="error"></div>
+        <div id="result">
+            <h2>Imagem Processada:</h2>
+            <img id="processedImage" src="" alt="Imagem Processada" style="display: none;">
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const imageInput = document.getElementById('imageInput');
+        const processedImage = document.getElementById('processedImage');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+        const loadingDiv = document.getElementById('loading');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+
+            // Limpa resultados anteriores e mostra loading
+            processedImage.style.display = 'none';
+            processedImage.src = '';
+            errorDiv.textContent = '';
+            resultDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                loadingDiv.style.display = 'none'; // Esconde loading
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Exibe a imagem processada usando o Data URI
+                processedImage.src = data.processed_image_data_uri;
+                processedImage.style.display = 'block';
+                resultDiv.style.display = 'block';
+                console.log('Sucesso:', data.message);
+
+            } catch (error) {
+                loadingDiv.style.display = 'none'; // Esconde loading em caso de erro
+                console.error('Erro no upload:', error);
+                errorDiv.textContent = `Erro: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
